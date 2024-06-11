@@ -9,7 +9,6 @@ import (
 
 	bbc "github.com/bbchallenge/bbchallenge/lib_bbchallenge"
 	bbchallenge "github.com/bbchallenge/bbchallenge/lib_bbchallenge"
-	uuid "github.com/nu7hatch/gouuid"
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 )
@@ -28,10 +27,9 @@ func (f *BBChallengeFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 }
 
 func getRunName() string {
-	id, _ := uuid.NewV4()
-
-	split := strings.Split(id.String(), "-")
-	return "run-" + split[len(split)-1]
+	// I'll be running this many times with different memory limits so I
+	// changed this to make it easier to tell which run is which.
+	return "run-" + strings.Replace(time.Now().Format(time.DateTime), " ", "_", 1)
 }
 
 var undecidedTimeFile *os.File
