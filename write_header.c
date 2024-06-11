@@ -1,3 +1,5 @@
+//go:build exclude
+
 #include <stdlib.h>
 #include <stdio.h>
 
