@@ -114,7 +114,7 @@ func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int
 
 	max_pos := 0
 	min_pos := MAX_MEMORY - 1
-	curr_head := MAX_MEMORY / 2
+	curr_head := limitSpace / 2
 
 	var curr_state byte = 1
 
@@ -137,17 +137,14 @@ func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int
 			return NO_HALT, 0, 0,
 				steps_count, max_pos - min_pos + 1
 		}
-
 		if nbStateSeen <= 4 && max_pos-min_pos+1 > BB4_SPACE {
 			return NO_HALT, 0, 0,
 				steps_count, max_pos - min_pos + 1
 		}
-
 		if nbStateSeen == 5 && steps_count > limitTime {
 			return UNDECIDED_TIME, 0, 0, steps_count, max_pos - min_pos + 1
 		}
-
-		if nbStateSeen == 5 && max_pos-min_pos+1 > limitSpace {
+		if nbStateSeen == 5 && max_pos-min_pos+1 > BB5_SPACE {
 			return UNDECIDED_SPACE, 0, 0, steps_count, max_pos - min_pos + 1
 		}
 
@@ -169,19 +166,11 @@ func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int
 
 		tape[curr_head] = write
 
-		if move == R {
+		// Prevent tape head from moving beyond the edges of the tape
+		if move == R && curr_head < limitSpace-1 {
 			curr_head += 1
-			if curr_head == MAX_MEMORY {
-				return UNDECIDED_SPACE, 0, 0,
-					steps_count, max_pos - min_pos + 1
-			}
-
-		} else {
+		} else if move == L && curr_head > 0 {
 			curr_head -= 1
-			if curr_head == -1 {
-				return UNDECIDED_SPACE, 0, 0,
-					steps_count, max_pos - min_pos + 1
-			}
 		}
 
 		steps_count += 1
