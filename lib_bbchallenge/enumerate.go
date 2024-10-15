@@ -56,7 +56,7 @@ var MaxSpace int
 var MaxNbGoRoutines int
 
 // Logging related internal variables
-var lastLogTime time.Time
+var lastLogTime time.Time = time.Now()
 var notFirstLog bool
 
 // Invariant: tm's transition (state, read) is not defined
@@ -252,8 +252,7 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 	MaxSpace = MaxI(localMaxSpace, MaxSpace)
 	MaxNbGoRoutines = MaxI(MaxNbGoRoutines, runtime.NumGoroutine())
 
-	if Verbose && (!notFirstLog || time.Since(lastLogTime) >= time.Duration(LogFreq)) || isRoot {
-		notFirstLog = true
+	if Verbose && (time.Since(lastLogTime) >= time.Duration(LogFreq) || isRoot) {
 		lastLogTime = time.Now()
 		fmt.Printf("run time: %s\ntotal: %d\npruned: %d (%.2f)\nhalt: %d (%.2f)\nnon halt: %d (%.2f)\nundecided time: %d (%.2f)\n"+
 			"undecided space: %d (%.2f)\nbb est.: %d\nbb space est.: %d\nrun/sec: %f\nmax go routines: %d\n\n",
