@@ -114,7 +114,7 @@ func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int
 
 	max_pos := 0
 	min_pos := MAX_MEMORY - 1
-	curr_head := limitSpace / 2
+	curr_head := 0
 
 	var curr_state byte = 1
 
