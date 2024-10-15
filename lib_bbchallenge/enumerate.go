@@ -252,7 +252,7 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 	MaxSpace = MaxI(localMaxSpace, MaxSpace)
 	MaxNbGoRoutines = MaxI(MaxNbGoRoutines, runtime.NumGoroutine())
 
-	if Verbose && (!notFirstLog || time.Since(lastLogTime) >= time.Duration(LogFreq)) {
+	if Verbose && (!notFirstLog || time.Since(lastLogTime) >= time.Duration(LogFreq)) || isRoot {
 		notFirstLog = true
 		lastLogTime = time.Now()
 		fmt.Printf("run time: %s\ntotal: %d\npruned: %d (%.2f)\nhalt: %d (%.2f)\nnon halt: %d (%.2f)\nundecided time: %d (%.2f)\n"+
