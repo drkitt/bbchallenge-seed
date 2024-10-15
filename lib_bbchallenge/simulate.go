@@ -132,20 +132,10 @@ func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int
 		}
 		state_seen[curr_state-1] = true
 
-		// Using knowledge about BB time and space
-		if nbStateSeen <= 4 && steps_count > BB4 {
-			return NO_HALT, 0, 0,
-				steps_count, max_pos - min_pos + 1
-		}
-		if nbStateSeen <= 4 && max_pos-min_pos+1 > BB4_SPACE {
-			return NO_HALT, 0, 0,
-				steps_count, max_pos - min_pos + 1
-		}
-		if nbStateSeen == 5 && steps_count > limitTime {
+		// At the time of writing, there aren't any facts we can use to confidently say that an LBA doesn't halt.
+		// We also no longer use the space limit, since that's built into the model now.
+		if steps_count > limitTime {
 			return UNDECIDED_TIME, 0, 0, steps_count, max_pos - min_pos + 1
-		}
-		if nbStateSeen == 5 && max_pos-min_pos+1 > BB5_SPACE {
-			return UNDECIDED_SPACE, 0, 0, steps_count, max_pos - min_pos + 1
 		}
 
 		min_pos = MinI(min_pos, curr_head)
