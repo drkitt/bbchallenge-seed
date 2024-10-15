@@ -27,6 +27,8 @@ var BBRecordLog io.Writer       // Logging BB and BB_space record holders
 var Verbose bool
 var LogFreq int64 = 30000000000 // 30 sec in ns
 
+var ListAll bool // Whether to list all simulated machines
+
 var ActivateFiltering bool = true
 
 var SimulationLimitTime int = BB5
@@ -61,10 +63,6 @@ var notFirstLog bool
 func Enumerate(nbStates byte, tm TM, state byte, read byte,
 	previous_steps_count int, previous_space_count int,
 	slow_down int, simulation_backend SimulationBackend) {
-
-	// mutexMetrics.Lock()
-	// printTM(tm)
-	// mutexMetrics.Unlock()
 
 	// Get the list of candidate target states
 	// taking all states up to the first completely undefined
@@ -182,6 +180,12 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 					localMaxSpace = MaxI(localMaxSpace, space_count)
 					localNbHalt += 1
 
+					if ListAll {
+						fmt.Printf("Time: %d \nSpace: %d\n%s\n",
+							steps_count, space_count,
+							newTm.ToAsciiTable(nbStates))
+					}
+
 					if slow_down == 0 {
 						wg.Add(1)
 
@@ -198,16 +202,25 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 
 				case NO_HALT:
 					localNbNoHalt += 1
+					if ListAll {
+						fmt.Printf("Does not halt\n%s\n", newTm.ToAsciiTable(nbStates))
+					}
 					break
 
 				case UNDECIDED_TIME:
 					localNbUndecidedTime += 1
 					UndecidedTimeLog.Write(newTm[:])
+					if ListAll {
+						fmt.Printf("Undecided (time limit exceeded)\n%s\n", newTm.ToAsciiTable(nbStates))
+					}
 					break
 
 				case UNDECIDED_SPACE:
 					localNbUndecidedSpace += 1
 					UndecidedSpaceLog.Write(newTm[:])
+					if ListAll {
+						fmt.Printf("Undecided (space limit exceeded)\n%s\n", newTm.ToAsciiTable(nbStates))
+					}
 					break
 				}
 			}

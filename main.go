@@ -61,6 +61,8 @@ func main() {
 	arg_verb := flag.Bool("v", false, "displays infos about the current run on stdout")
 	arg_verb_freq := flag.Int("vf", 30, "seconds between each stdout log in verbose mode")
 
+	arg_list := flag.Bool("list", false, "lists all simulated machines")
+
 	arg_limit_time := flag.Int("tlim", bbc.BB5, "time limit after which running machines are killed and marked as 'UNDECIDED_TIME' (known values of Busy Beaver are also used for early termination)")
 	arg_limit_space := flag.Int("slim", bbc.BB5_SPACE, "space limit after which machines are killed and marked as 'UNDECIDED_SPACE' (known values of Busy Beaver space are also used for early termination)")
 
@@ -103,6 +105,7 @@ func main() {
 
 	bbc.Verbose = *arg_verb
 	bbc.LogFreq = int64(*arg_verb_freq) * 1e9
+	bbc.ListAll = *arg_list
 	bbc.SimulationLimitTime = *arg_limit_time
 	bbc.SimulationLimitSpace = *arg_limit_space
 	bbc.SlowDownInit = 2
