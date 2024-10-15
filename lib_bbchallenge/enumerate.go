@@ -98,7 +98,7 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 		return
 	}
 
-	isRoot := definedTransitionCount == 1
+	isRoot := definedTransitionCount == 0
 
 	var target_state byte
 

@@ -89,7 +89,7 @@ func main() {
 
 	// Making the initial transition 1RB actually loses quite a bit of generality in this case
 	kick_start := bbc.TM{
-		1, bbc.L, 2, 0, 0, 0,
+		0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0,
@@ -126,7 +126,7 @@ func main() {
 		log.Info("Simulation backend: C")
 	}
 
-	bbc.Enumerate(nbStates, kick_start, 2, 1, 1, 1, bbc.SlowDownInit, simulationBackend)
+	bbc.Enumerate(nbStates, kick_start, 1, 0, 0, 0, bbc.SlowDownInit, simulationBackend)
 
 	log.Infoln("\nReport")
 	log.Infoln("======")
