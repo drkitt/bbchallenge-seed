@@ -29,6 +29,8 @@ const (
 	UNDECIDED_SPACE
 )
 
+var BBtUpperBound int
+
 func MaxI(a int, b int) int {
 	if a > b {
 		return a
@@ -130,11 +132,13 @@ func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int
 		}
 		state_seen[curr_state-1] = true
 
-		// At the time of writing, there aren't any facts we can use to confidently say that an LBA doesn't halt.
-		// We also no longer use the space limit, since that's built into the model now.
+		if steps_count > BBtUpperBound {
+			return NO_HALT, 0, 0, steps_count, max_pos - min_pos + 1
+		}
 		if steps_count > limitTime {
 			return UNDECIDED_TIME, 0, 0, steps_count, max_pos - min_pos + 1
 		}
+		// We no longer use the space limit, since that's built into the model now.
 
 		min_pos = MinI(min_pos, curr_head)
 		max_pos = MaxI(max_pos, curr_head)

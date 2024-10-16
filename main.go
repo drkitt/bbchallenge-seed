@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 	"time"
@@ -63,8 +64,8 @@ func main() {
 
 	arg_list := flag.Bool("list", false, "lists all simulated machines")
 
-	arg_limit_time := flag.Int("tlim", bbc.BB5, "time limit after which running machines are killed and marked as 'UNDECIDED_TIME' (known values of Busy Beaver are also used for early termination)")
-	arg_limit_space := flag.Int("slim", bbc.BB5_SPACE, "space limit after which machines are killed and marked as 'UNDECIDED_SPACE' (known values of Busy Beaver space are also used for early termination)")
+	arg_limit_space := flag.Int("slim", bbc.BB5_SPACE, "LBA memory capacity")
+	arg_limit_time := flag.Int("tlim", math.MaxInt, "time limit after which running machines are killed and marked as 'UNDECIDED_TIME' (leave blank to use the upper bound 2^t*t*n, for tape length t and number of states n)")
 
 	arg_task_divisor := flag.Int("divtask", 1, "divides the size of the job by 1, 2, 4 or 8")
 
@@ -106,6 +107,7 @@ func main() {
 	bbc.Verbose = *arg_verb
 	bbc.LogFreq = int64(*arg_verb_freq) * 1e9
 	bbc.ListAll = *arg_list
+	bbc.BBtUpperBound = int(math.Pow(2, float64(*arg_limit_space))) * *arg_limit_space * int(nbStates)
 	bbc.SimulationLimitTime = *arg_limit_time
 	bbc.SimulationLimitSpace = *arg_limit_space
 	bbc.SlowDownInit = 2
