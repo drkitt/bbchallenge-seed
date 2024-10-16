@@ -20,8 +20,6 @@ const H = 6
 const R = 0
 const L = 1
 
-const MAX_MEMORY = 40000
-
 type HaltStatus byte
 
 const (
@@ -110,10 +108,10 @@ func (tm TM) ToAsciiTable(nbStates byte) (toRet string) {
 // - steps count
 // - space count
 func simulate(tm TM, limitTime int, limitSpace int) (HaltStatus, byte, byte, int, int) {
-	var tape [MAX_MEMORY]byte
+	var tape = make([]byte, limitSpace)
 
 	max_pos := 0
-	min_pos := MAX_MEMORY - 1
+	min_pos := limitSpace - 1
 	curr_head := 0
 
 	var curr_state byte = 1
