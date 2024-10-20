@@ -242,7 +242,8 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 		BBRecordLog.Write([]byte(fmt.Sprintf("*TIME %d SPACE %d\n%s\n",
 			localMaxNbSteps, localMaxSpace,
 			localBestTimeHaltingMachine.ToAsciiTable(nbStates))))
-	} else if localMaxSpace >= MaxSpace {
+	} else if localMaxSpace > MaxSpace {
+		// The comparison above was changed from >= to > because every machine that used all available memory would be recorded as a champion and that got annoying
 		BBRecordLog.Write([]byte(fmt.Sprintf("TIME %d *SPACE %d\n%s\n",
 			localMaxNbSteps, localMaxSpace,
 			localBestSpaceHaltingMachine.ToAsciiTable(nbStates))))
