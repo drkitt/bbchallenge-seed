@@ -20,6 +20,7 @@ const (
 
 var TimeStart time.Time = time.Now()
 
+var HaltingLog io.Writer        // Logging HALT machines
 var UndecidedTimeLog io.Writer  // Logging UNDECIDED_TIME machines
 var UndecidedSpaceLog io.Writer // Logging UNDECIDED_SPACE machines
 var BBRecordLog io.Writer       // Logging BB and BB_space record holders
@@ -185,6 +186,8 @@ func Enumerate(nbStates byte, tm TM, state byte, read byte,
 							steps_count, space_count,
 							newTm.ToAsciiTable(nbStates))
 					}
+
+					HaltingLog.Write(newTm[:])
 
 					if slow_down == 0 {
 						wg.Add(1)

@@ -34,6 +34,7 @@ func getRunName() string {
 }
 
 var undecidedTimeFile *os.File
+var haltingFile *os.File
 var undecidedSpaceFile *os.File
 var bbRecordFile *os.File
 
@@ -42,6 +43,9 @@ func initLogger(runName string) {
 	mainLogFileName := runName + ".txt"
 	log.SetFormatter(new(BBChallengeFormatter))
 	log.SetOutput(bbchallenge.InitAppendFile(mainLogFileName, "output/"))
+
+	haltingLogFileName := runName + "_halting" // binary file
+	bbc.HaltingLog = bbchallenge.InitAppendFile(haltingLogFileName, "output/")
 
 	undecidedTimeLogFileName := runName + "_undecided_time" // binary file
 	bbc.UndecidedTimeLog = bbchallenge.InitAppendFile(undecidedTimeLogFileName, "output/")
@@ -147,6 +151,7 @@ func main() {
 	log.Info("Max # of simultaneous Go routines during search: ", bbc.MaxNbGoRoutines)
 	log.StandardLogger().Writer().Close()
 
+	haltingFile.Close()
 	undecidedTimeFile.Close()
 	undecidedSpaceFile.Close()
 	bbRecordFile.Close()
