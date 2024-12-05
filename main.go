@@ -64,7 +64,7 @@ func main() {
 
 	arg_list := flag.Bool("list", false, "lists all simulated machines")
 
-	arg_limit_space := flag.Int("slim", bbc.BB5_SPACE, "LBA memory capacity")
+	arg_limit_space := flag.Int("slim", 10, "LBA memory capacity")
 	arg_limit_time := flag.Int("tlim", math.MaxInt, "time limit after which running machines are killed and marked as 'UNDECIDED_TIME' (leave blank to use the upper bound 2^t*t*n, for tape length t and number of states n)")
 
 	arg_task_divisor := flag.Int("divtask", 1, "divides the size of the job by 1, 2, 4 or 8")
