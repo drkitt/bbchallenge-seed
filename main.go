@@ -30,7 +30,17 @@ func (f *BBChallengeFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 func getRunName() string {
 	// I'll be running this many times with different memory limits so I
 	// changed this to make it easier to tell which run is which.
-	return "run-" + strings.Replace(time.Now().Format(time.DateTime), " ", "_", 1)
+	timestamp := time.Now().Format(time.DateTime)
+
+	fmt.Println(timestamp)
+
+	// Get rid of annoying characters
+	timestamp = strings.Replace(timestamp, " ", "_", -1)
+	timestamp = strings.Replace(timestamp, ":", "-", -1)
+
+	fmt.Println(timestamp)
+
+	return "run_" + timestamp
 }
 
 var undecidedTimeFile *os.File
