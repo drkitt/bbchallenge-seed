@@ -1,7 +1,25 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
+
+// Where to find the file that contains the halting machines
+const DATABASE_PATH = "./run_2025-01-14_12-25-37_halting"
 
 func main() {
+	database, error := os.ReadFile(DATABASE_PATH)
+
+	if error != nil {
+		fmt.Println(error)
+		os.Exit(-1)
+	}
+
 	fmt.Println("Hi 🥺 :3")
+
+	// The BBChallenge deciders subtracted 1 from this quantity to account for
+	// the 30-byte header, but we don't have a header so we don't do that
+	databaseSize := (len(database) / 30)
+	fmt.Println(databaseSize)
 }
