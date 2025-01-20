@@ -32,13 +32,9 @@ func getRunName() string {
 	// changed this to make it easier to tell which run is which.
 	timestamp := time.Now().Format(time.DateTime)
 
-	fmt.Println(timestamp)
-
 	// Get rid of annoying characters
 	timestamp = strings.Replace(timestamp, " ", "_", -1)
 	timestamp = strings.Replace(timestamp, ":", "-", -1)
-
-	fmt.Println(timestamp)
 
 	return "run_" + timestamp
 }
