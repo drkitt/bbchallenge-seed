@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+
+	bbc "github.com/drkitt/bbchallenge-go"
 )
 
 // Where to find the file that contains the halting machines
@@ -22,4 +25,11 @@ func main() {
 	// the 30-byte header, but we don't have a header so we don't do that
 	databaseSize := (len(database) / 30)
 	fmt.Println(databaseSize)
+
+	outputFile, error := os.OpenFile("output/"+bbc.GetRunName(),
+		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if error != nil {
+		log.Fatal(error)
+	}
+	defer outputFile.Close()
 }
