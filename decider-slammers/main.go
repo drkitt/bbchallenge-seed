@@ -12,6 +12,7 @@ import (
 // Where to find the file that contains the halting machines
 const DATABASE_PATH = "./run_2025-01-14_12-25-37_halting"
 
+// Visual demonstration of how slammers work: https://www.youtube.com/watch?v=XYq08kJGp4M
 func decide(lba bbc.LBA) bool {
 	// wait wait what's an lba
 	return false
