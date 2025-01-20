@@ -12,6 +12,11 @@ import (
 // Where to find the file that contains the halting machines
 const DATABASE_PATH = "./run_2025-01-14_12-25-37_halting"
 
+func decide(lba bbc.LBA) bool {
+	// wait wait what's an lba
+	return false
+}
+
 func main() {
 	database, error := os.ReadFile(DATABASE_PATH)
 
@@ -43,7 +48,7 @@ func main() {
 		}
 		fmt.Println(lba.ToAsciiTable(2))
 
-		if true {
+		if decide(lba) {
 			var toWrite [4]byte
 			binary.BigEndian.PutUint32(toWrite[0:4], uint32(i))
 			outputFile.Write(toWrite[:])
