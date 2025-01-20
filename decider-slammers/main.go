@@ -26,10 +26,19 @@ func main() {
 	databaseSize := (len(database) / 30)
 	fmt.Println(databaseSize)
 
+	// Create output file
 	outputFile, error := os.OpenFile("output/"+bbc.GetRunName(),
 		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if error != nil {
 		log.Fatal(error)
 	}
+
+	// where is it
+	machine, error := bbc.GetMachineI(database, 0, false)
+	if error != nil {
+		fmt.Println("Error: ", error)
+	}
+	fmt.Println(machine.ToAsciiTable(2))
+
 	defer outputFile.Close()
 }
