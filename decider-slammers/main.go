@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"log"
 	"os"
@@ -32,13 +33,20 @@ func main() {
 	if error != nil {
 		log.Fatal(error)
 	}
-
-	// where is it
-	machine, error := bbc.GetMachineI(database, 0, false)
-	if error != nil {
-		fmt.Println("Error: ", error)
-	}
-	fmt.Println(machine.ToAsciiTable(2))
-
 	defer outputFile.Close()
+
+	// Not gonna add multithreading until it gets annoyingly slow 😤
+	for i := 0; i < databaseSize; i += 1 {
+		machine, error := bbc.GetMachineI(database, i, false)
+		if error != nil {
+			fmt.Println("Error: ", error)
+		}
+		fmt.Println(machine.ToAsciiTable(2))
+
+		if true {
+			var toWrite [4]byte
+			binary.BigEndian.PutUint32(toWrite[0:4], uint32(i))
+			outputFile.Write(toWrite[:])
+		}
+	}
 }
