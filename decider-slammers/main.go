@@ -37,11 +37,11 @@ func main() {
 
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 	for i := 0; i < databaseSize; i += 1 {
-		machine, error := bbc.GetMachineI(database, i, false)
+		lba, error := bbc.GetMachineI(database, i, false)
 		if error != nil {
 			fmt.Println("Error: ", error)
 		}
-		fmt.Println(machine.ToAsciiTable(2))
+		fmt.Println(lba.ToAsciiTable(2))
 
 		if true {
 			var toWrite [4]byte
