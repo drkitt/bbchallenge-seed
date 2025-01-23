@@ -29,6 +29,32 @@ type Record struct {
 	Position int
 }
 
+func recordsAreEquivalent(pastRecord *Record, currentRecord *Record) bool {
+	offset := 0
+
+	// See whether we've modified the tape squares surrounding the old record
+	// position
+	for pastRecord.Position+offset >= 0 && pastRecord.Position+offset < len(pastRecord.Tape) {
+
+		// The records are automatically considered equivalent if there's a tape
+		// square before the previous record that hasn't been visited since the
+		// previous record was broken
+		if currentRecord.Tape[pastRecord.Position+offset].LastTimeSeen < pastRecord.Time {
+			break
+		}
+
+		if currentRecord.Tape[currentRecord.Position+offset].Symbol != pastRecord.Tape[pastRecord.Position+offset].Symbol {
+			return false
+		}
+
+		offset -= 1
+	}
+
+	// Otherwise, the records are considered equivalent if we weren't able to
+	// find any tape squares that are different between the two records
+	return true
+}
+
 // Takes a number that represents a state internally and returns the letter
 // that represents that state in printing
 func stateToLetter(state byte) rune {
@@ -50,24 +76,73 @@ func tapeString(tape []TapePosition, currentPosition int, currentState byte) str
 	return result
 }
 
-func decide(lba bbc.LBA, tapeLength int) bool {
+func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
 	currentPosition := 0
-	//nextPosition := currentPosition
-	//toWrite := byte(0)
+	nextPosition := currentPosition
+	toWrite := byte(0)
 	currentState := byte(1)
 	currentTime := 0
-	//maxPositionSeen := 0
+	maxPositionSeen := 0
 
 	// When we encounter a new tape square, this maps the current state and
 	// symbol read to the contents of the tape at the time of reading
-	//var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
+	var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
 
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
-		fmt.Printf("Current time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n",
+
+		fmt.Printf("Current time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n\n",
 			currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
-		currentState = 0
+
+		// Handle a never-before-seen tape square
+		if currentPosition > maxPositionSeen {
+			var record Record
+			record.Tape = make([]TapePosition, tapeLength)
+			copy(record.Tape, tape)
+			record.Time = currentTime
+			record.Position = currentPosition
+
+			if _, ok := records[currentState]; !ok {
+				records[currentState] = make(map[byte][]Record)
+			}
+
+			// We've encountered this symbol in this state before. Are the
+			// nearby tape symbols the same as before?
+			if _, ok := records[currentState][symbolRead]; ok {
+				for _, previousRecord := range records[currentState][symbolRead] {
+
+					fmt.Println("Comparing records:")
+					fmt.Println("\t", tapeString(previousRecord.Tape, previousRecord.Position, currentState))
+					fmt.Println("\t", tapeString(record.Tape, record.Position, currentState))
+
+					if recordsAreEquivalent(&previousRecord, &record) {
+						fmt.Println("\noh my god it's a translated cycler")
+						preperiod := previousRecord.Time + 1
+						period := currentTime - previousRecord.Time
+
+						return true, preperiod, period
+					}
+				}
+			}
+
+			records[currentState][symbolRead] = append(records[currentState][symbolRead], record)
+
+			maxPositionSeen = bbc.MaxI(maxPositionSeen, currentPosition)
+		}
+
+		if maxPositionSeen > tapeLength || currentPosition < 0 {
+			return false, -1, -1
+		}
+
+		tape[currentPosition].Seen = true
+		tape[currentPosition].LastTimeSeen = currentTime
+
+		toWrite, currentState, nextPosition = bbc.LbaStep(lba, symbolRead, currentState, currentPosition, currentTime)
+
+		tape[currentPosition].Symbol = toWrite
+		currentPosition = nextPosition
+		currentTime += 1
 	}
 
 	// Did you know? Halting translated cyclers that enter their post-period
@@ -75,10 +150,15 @@ func decide(lba bbc.LBA, tapeLength int) bool {
 	// information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
 	// up next: the slammers
-	return false
+	return false, -1, -1
 }
 
 func main() {
+	var maxPreperiod int = 0
+	var preperiodChampionIndex uint32 = 0
+	var maxPeriod int = 0
+	var periodChampionIndex uint32 = 0
+
 	database, error := os.ReadFile(DATABASE_PATH)
 
 	if error != nil {
@@ -113,10 +193,23 @@ func main() {
 		}
 		fmt.Println(lba.ToAsciiTable(2))
 
-		if decide(lba, 30) {
+		if isTranslatedCycler, preperiod, period := decide(lba, 30); isTranslatedCycler {
+			fmt.Printf("Preperiod: %d\nPeriod: %d\n", preperiod, period)
+
+			if preperiod > maxPreperiod {
+				maxPreperiod = preperiod
+				preperiodChampionIndex = uint32(i)
+			}
+			if period > maxPeriod {
+				maxPeriod = period
+				periodChampionIndex = uint32(i)
+			}
+
 			var toWrite [4]byte
 			binary.BigEndian.PutUint32(toWrite[0:4], uint32(i))
 			outputFile.Write(toWrite[:])
 		}
 	}
+
+	fmt.Printf("\nMax preperiod: %d (machine %d)\nMax period: %d (machine %d)\n", maxPreperiod, preperiodChampionIndex, maxPeriod, periodChampionIndex)
 }
