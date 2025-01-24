@@ -83,7 +83,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	toWrite := byte(0)
 	currentState := byte(1)
 	currentTime := 0
-	maxPositionSeen := 0
+	maxPositionSeen := -1
 
 	// When we encounter a new tape square, this maps the current state and
 	// symbol read to the contents of the tape at the time of reading
@@ -92,11 +92,13 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
 
-		fmt.Printf("Current time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n\n",
+		fmt.Printf("\nCurrent time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n",
 			currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
 
 		// Handle a never-before-seen tape square
 		if currentPosition > maxPositionSeen {
+			fmt.Println("New record")
+
 			var record Record
 			record.Tape = make([]TapePosition, tapeLength)
 			copy(record.Tape, tape)
@@ -118,7 +120,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 
 					if recordsAreEquivalent(&previousRecord, &record) {
 						fmt.Println("\noh my god it's a translated cycler")
-						preperiod := previousRecord.Time + 1
+						preperiod := previousRecord.Time
 						period := currentTime - previousRecord.Time
 
 						return true, preperiod, period
@@ -191,10 +193,10 @@ func main() {
 		if error != nil {
 			fmt.Println("Error: ", error)
 		}
-		fmt.Println(lba.ToAsciiTable(2))
+		fmt.Print(lba.ToAsciiTable(2))
 
 		if isTranslatedCycler, preperiod, period := decide(lba, 30); isTranslatedCycler {
-			fmt.Printf("Preperiod: %d\nPeriod: %d\n", preperiod, period)
+			fmt.Printf("Preperiod: %d\nPeriod: %d\n\n", preperiod, period)
 
 			if preperiod > maxPreperiod {
 				maxPreperiod = preperiod
