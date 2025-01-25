@@ -80,13 +80,16 @@ func tapeString(tape []TapePosition, currentPosition int, currentState byte) str
 func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
 	var periods []int
+	// Yo dawg I you like state machines so I put a state machine in your state
+	// machine so your decider can switch between well-defined states while your
+	// LBA can switch between well-defined states
+	searchingForPeriod := true
 	currentPosition := 0
 	nextPosition := currentPosition
 	toWrite := byte(0)
 	currentState := byte(1)
 	currentTime := 0
 	maxPositionSeen := -1
-
 	// When we encounter a new tape square, this maps the current state and
 	// symbol read to the contents of the tape at the time of reading
 	var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
@@ -94,60 +97,69 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
 
-		fmt.Printf("\nCurrent time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n",
-			currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
+		if searchingForPeriod {
+			fmt.Printf("\nCurrent time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n",
+				currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
 
-		// Handle a never-before-seen tape square
-		if currentPosition > maxPositionSeen {
-			fmt.Println("New record")
+			// Handle a never-before-seen tape square
+			if currentPosition > maxPositionSeen {
+				fmt.Println("New record")
 
-			var record Record
-			record.Tape = make([]TapePosition, tapeLength)
-			copy(record.Tape, tape)
-			record.Time = currentTime
-			record.Position = currentPosition
+				var record Record
+				record.Tape = make([]TapePosition, tapeLength)
+				copy(record.Tape, tape)
+				record.Time = currentTime
+				record.Position = currentPosition
 
-			if _, ok := records[currentState]; !ok {
-				records[currentState] = make(map[byte][]Record)
-			}
+				if _, ok := records[currentState]; !ok {
+					records[currentState] = make(map[byte][]Record)
+				}
 
-			// We've encountered this symbol in this state before. Are the
-			// nearby tape symbols the same as before?
-			if _, ok := records[currentState][symbolRead]; ok {
-				for _, previousRecord := range records[currentState][symbolRead] {
+				// We've encountered this symbol in this state before. Are the
+				// nearby tape symbols the same as before?
+				if _, ok := records[currentState][symbolRead]; ok {
+					for _, previousRecord := range records[currentState][symbolRead] {
 
-					fmt.Println("Comparing records:")
-					fmt.Println("\t", tapeString(previousRecord.Tape, previousRecord.Position, currentState))
-					fmt.Println("\t", tapeString(record.Tape, record.Position, currentState))
+						fmt.Println("Comparing records:")
+						fmt.Println("\t", tapeString(previousRecord.Tape, previousRecord.Position, currentState))
+						fmt.Println("\t", tapeString(record.Tape, record.Position, currentState))
 
-					if recordsAreEquivalent(&previousRecord, &record) {
-						fmt.Println("\noh my god it's a translated cycler")
-						preperiod := previousRecord.Time
-						period := currentTime - previousRecord.Time
+						if recordsAreEquivalent(&previousRecord, &record) {
+							fmt.Println("\noh my god it's a translated cycler")
+							preperiod := previousRecord.Time
+							period := currentTime - previousRecord.Time
 
-						periods = append(periods, preperiod, period)
+							periods = append(periods, preperiod, period)
 
-						return true, periods
+							searchingForPeriod = false
+						}
 					}
 				}
+
+				records[currentState][symbolRead] = append(records[currentState][symbolRead], record)
+
+				maxPositionSeen = bbc.MaxI(maxPositionSeen, currentPosition)
 			}
 
-			records[currentState][symbolRead] = append(records[currentState][symbolRead], record)
+			if maxPositionSeen > tapeLength || currentPosition < 0 {
+				return false, periods
+			}
 
-			maxPositionSeen = bbc.MaxI(maxPositionSeen, currentPosition)
+			tape[currentPosition].Seen = true
+			tape[currentPosition].LastTimeSeen = currentTime
+
+		} else {
+			// Detect hitting the edge of the tape
+			fmt.Print("🥺")
 		}
 
-		if maxPositionSeen > tapeLength || currentPosition < 0 {
-			return false, periods
-		}
-
-		tape[currentPosition].Seen = true
-		tape[currentPosition].LastTimeSeen = currentTime
-
+		// Take a step
 		toWrite, currentState, nextPosition = bbc.LbaStep(lba, symbolRead, currentState, currentPosition, currentTime)
 
 		tape[currentPosition].Symbol = toWrite
-		currentPosition = nextPosition
+		if nextPosition >= 0 && nextPosition < tapeLength {
+			currentPosition = nextPosition
+		}
 		currentTime += 1
 	}
 
@@ -155,14 +167,13 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	// the first time they encounter a tape edge are called slammers. For more
 	// information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
-	// up next: the slammers
-	return false, make([]int, 0)
+	return (len(periods) > 1), periods
 }
 
 func main() {
-	var maxPreperiod int = 0
+	var maxPreperiod int = -1
 	var preperiodChampionIndex uint32 = 0
-	var maxPeriod int = 0
+	var maxPeriod int = -1
 	var periodChampionIndex uint32 = 0
 
 	database, error := os.ReadFile(DATABASE_PATH)
@@ -217,5 +228,9 @@ func main() {
 		}
 	}
 
-	fmt.Printf("\nMax preperiod: %d (machine %d)\nMax period: %d (machine %d)\n", maxPreperiod, preperiodChampionIndex, maxPeriod, periodChampionIndex)
+	if maxPeriod > 0 {
+		fmt.Printf("\nMax preperiod: %d (machine %d)\nMax period: %d (machine %d)\n", maxPreperiod, preperiodChampionIndex, maxPeriod, periodChampionIndex)
+	} else {
+		fmt.Println("No translated cyclers found")
+	}
 }
