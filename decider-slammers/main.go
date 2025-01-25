@@ -84,6 +84,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	// machine so your decider can switch between well-defined states while your
 	// LBA can switch between well-defined states
 	searchingForPeriod := true
+	previousPosition := -1
 	currentPosition := 0
 	nextPosition := currentPosition
 	toWrite := byte(0)
@@ -149,17 +150,19 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			tape[currentPosition].LastTimeSeen = currentTime
 
 		} else {
+			fmt.Print("👍")
 			// Detect hitting the edge of the tape
-			fmt.Print("🥺")
+			if currentPosition == previousPosition {
+				fmt.Print("🥺")
+			}
 		}
 
 		// Take a step
-		toWrite, currentState, nextPosition = bbc.LbaStep(lba, symbolRead, currentState, currentPosition, currentTime)
+		toWrite, currentState, nextPosition = bbc.LbaStep(lba, tapeLength, symbolRead, currentState, currentPosition, currentTime)
 
 		tape[currentPosition].Symbol = toWrite
-		if nextPosition >= 0 && nextPosition < tapeLength {
-			currentPosition = nextPosition
-		}
+		previousPosition = currentPosition
+		currentPosition = nextPosition
 		currentTime += 1
 	}
 
