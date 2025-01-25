@@ -150,10 +150,10 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			tape[currentPosition].LastTimeSeen = currentTime
 
 		} else {
-			fmt.Print("👍")
 			// Detect hitting the edge of the tape
 			if currentPosition == previousPosition {
-				fmt.Print("🥺")
+				fmt.Println("🥺 hi tape edge")
+				searchingForPeriod = true
 			}
 		}
 
