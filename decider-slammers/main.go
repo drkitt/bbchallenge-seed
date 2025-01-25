@@ -132,6 +132,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 
 							periods = append(periods, preperiod, period)
 
+							fmt.Println("Moving to edge of tape...")
 							searchingForPeriod = false
 						}
 					}
@@ -214,7 +215,32 @@ func main() {
 		fmt.Print(lba.ToAsciiTable(2))
 
 		if isTranslatedCycler, periods := decide(lba, 30); isTranslatedCycler {
-			fmt.Printf("Preperiod: %d\nPeriod: %d\n\n", periods[0], periods[1])
+			// Create string for the cost function
+			costFunction := ""
+			for i, period := range periods {
+				// Even indices are constant sections, so we avoid writing terms
+				// that are just zero
+				if i%2 == 0 {
+					if period != 0 {
+						costFunction += fmt.Sprintf("%d", period)
+					}
+					// Odd indices are linear sections. Like the zero case above, we
+					// write "t" instead of "1t"
+				} else {
+					if period != 1 {
+						costFunction += fmt.Sprintf("%d", period)
+					}
+					costFunction += "t"
+				}
+				if i < len(periods)-1 && (i == 1 || period != 0) {
+					costFunction += " + "
+				}
+			}
+			fmt.Println("Cost function:", costFunction)
+
+			fmt.Println("Periods:", periods)
+
+			fmt.Println()
 
 			if periods[0] > maxPreperiod {
 				maxPreperiod = periods[0]
