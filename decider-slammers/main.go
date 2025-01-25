@@ -79,6 +79,7 @@ func tapeString(tape []TapePosition, currentPosition int, currentState byte) str
 // Tells you whether the given LBA is a translated cycler, and if it is, what its preperiod and period are
 func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
+	var periods []int
 	currentPosition := 0
 	nextPosition := currentPosition
 	toWrite := byte(0)
@@ -124,7 +125,9 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 						preperiod := previousRecord.Time
 						period := currentTime - previousRecord.Time
 
-						return true, []int{preperiod, period}
+						periods = append(periods, preperiod, period)
+
+						return true, periods
 					}
 				}
 			}
@@ -135,7 +138,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 		}
 
 		if maxPositionSeen > tapeLength || currentPosition < 0 {
-			return false, make([]int, 0)
+			return false, periods
 		}
 
 		tape[currentPosition].Seen = true
