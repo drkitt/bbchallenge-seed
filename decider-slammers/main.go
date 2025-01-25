@@ -172,9 +172,9 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	// Record the steps since the end of the last cycle as a constant section
 	periods = append(periods, currentTime-previousCycleEndTime)
 
-	// Did you know? Halting translated cyclers that enter their post-period
-	// the first time they encounter a tape edge are called slammers. For more
-	// information, see https://www.youtube.com/watch?v=XYq08kJGp4M
+	// Did you know?
+	// Halting translated cyclers with repeating period 1 are called slammers.
+	// For more information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
 	return (len(periods) > 1), periods
 }
