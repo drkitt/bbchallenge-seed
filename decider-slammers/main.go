@@ -94,6 +94,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	// When we encounter a new tape square, this maps the current state and
 	// symbol read to the contents of the tape at the time of reading
 	var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
+	previousCycleEndTime := 0
 
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
@@ -154,6 +155,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			// Detect hitting the edge of the tape
 			if currentPosition == previousPosition {
 				fmt.Println("🥺 hi tape edge")
+				previousCycleEndTime = currentTime
 				searchingForPeriod = true
 			}
 		}
@@ -166,6 +168,9 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 		currentPosition = nextPosition
 		currentTime += 1
 	}
+
+	// Record the steps since the end of the last cycle as a constant section
+	periods = append(periods, currentTime-previousCycleEndTime)
 
 	// Did you know? Halting translated cyclers that enter their post-period
 	// the first time they encounter a tape edge are called slammers. For more
