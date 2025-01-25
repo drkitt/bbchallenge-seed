@@ -76,7 +76,8 @@ func tapeString(tape []TapePosition, currentPosition int, currentState byte) str
 	return result
 }
 
-func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
+// Tells you whether the given LBA is a translated cycler, and if it is, what its preperiod and period are
+func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
 	currentPosition := 0
 	nextPosition := currentPosition
@@ -123,7 +124,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 						preperiod := previousRecord.Time
 						period := currentTime - previousRecord.Time
 
-						return true, preperiod, period
+						return true, []int{preperiod, period}
 					}
 				}
 			}
@@ -134,7 +135,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 		}
 
 		if maxPositionSeen > tapeLength || currentPosition < 0 {
-			return false, -1, -1
+			return false, make([]int, 0)
 		}
 
 		tape[currentPosition].Seen = true
@@ -152,7 +153,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	// information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
 	// up next: the slammers
-	return false, -1, -1
+	return false, make([]int, 0)
 }
 
 func main() {
@@ -195,15 +196,15 @@ func main() {
 		}
 		fmt.Print(lba.ToAsciiTable(2))
 
-		if isTranslatedCycler, preperiod, period := decide(lba, 30); isTranslatedCycler {
-			fmt.Printf("Preperiod: %d\nPeriod: %d\n\n", preperiod, period)
+		if isTranslatedCycler, periods := decide(lba, 30); isTranslatedCycler {
+			fmt.Printf("Preperiod: %d\nPeriod: %d\n\n", periods[0], periods[1])
 
-			if preperiod > maxPreperiod {
-				maxPreperiod = preperiod
+			if periods[0] > maxPreperiod {
+				maxPreperiod = periods[0]
 				preperiodChampionIndex = uint32(i)
 			}
-			if period > maxPeriod {
-				maxPeriod = period
+			if periods[1] > maxPeriod {
+				maxPeriod = periods[1]
 				periodChampionIndex = uint32(i)
 			}
 
