@@ -76,6 +76,12 @@ func tapeString(tape []TapePosition, currentPosition int, currentState byte) str
 	return result
 }
 
+// Prints the status of the LBA at a specific time step
+func getStatus(currentTime int, currentState byte, symbolRead byte, tape []TapePosition, currentPosition int) string {
+	return fmt.Sprintf("\nCurrent time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s",
+		currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
+}
+
 // Tells you whether the given LBA is a translated cycler, and if it is, what its preperiod and period are
 func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
@@ -100,8 +106,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 		symbolRead := tape[currentPosition].Symbol
 
 		if searchingForPeriod {
-			fmt.Printf("\nCurrent time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s\n",
-				currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
+			fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
 
 			// Handle a never-before-seen tape square
 			if currentPosition > maxPositionSeen {
@@ -155,6 +160,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			// Detect hitting the edge of the tape
 			if currentPosition == previousPosition {
 				fmt.Println("🥺 hi tape edge")
+				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
 				previousCycleEndTime = currentTime
 				searchingForPeriod = true
 			}
@@ -210,7 +216,7 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 2
+	databaseSize = 3
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
