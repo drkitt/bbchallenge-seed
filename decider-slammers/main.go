@@ -186,10 +186,10 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 }
 
 func main() {
-	var maxPreperiod int = -1
-	var preperiodChampionIndex uint32 = 0
-	var maxPeriod int = -1
-	var periodChampionIndex uint32 = 0
+	var maxConstantTerm int = -1
+	var constantChampionIndex uint32 = 0
+	var maxLinear int = -1
+	var linearChampionIndex uint32 = 0
 
 	database, error := os.ReadFile(DATABASE_PATH)
 
@@ -228,38 +228,38 @@ func main() {
 		if isTranslatedCycler, periods := decide(lba, 30); isTranslatedCycler {
 			// Create string for the cost function
 			costFunction := ""
-			for i, period := range periods {
-				// Even indices are constant sections, so we avoid writing terms
-				// that are just zero
+
+			constantTerm := 0
+			linearTerm := 0
+			for i := 0; i < len(periods); i++ {
 				if i%2 == 0 {
-					if period != 0 {
-						costFunction += fmt.Sprintf("%d", period)
-					}
-					// Odd indices are linear sections. Like the zero case above, we
-					// write "t" instead of "1t"
+					constantTerm += periods[i]
 				} else {
-					if period != 1 {
-						costFunction += fmt.Sprintf("%d", period)
-					}
-					costFunction += "t"
-				}
-				if i < len(periods)-1 && (i == 1 || period != 0) {
-					costFunction += " + "
+					linearTerm += periods[i]
 				}
 			}
-			fmt.Println("Cost function:", costFunction)
-
-			fmt.Println("Periods:", periods)
+			if linearTerm > 1 {
+				costFunction += fmt.Sprintf("%d", linearTerm)
+			}
+			if linearTerm > 0 {
+				costFunction += "t"
+			}
+			if constantTerm > 0 {
+				costFunction += fmt.Sprintf(" + %d", constantTerm)
+			}
 
 			fmt.Println()
+			fmt.Println("Periods:", periods)
+			fmt.Println("Cost function:", costFunction)
+			fmt.Println()
 
-			if periods[0] > maxPreperiod {
-				maxPreperiod = periods[0]
-				preperiodChampionIndex = uint32(i)
+			if constantTerm > maxConstantTerm {
+				maxConstantTerm = constantTerm
+				constantChampionIndex = uint32(i)
 			}
-			if periods[1] > maxPeriod {
-				maxPeriod = periods[1]
-				periodChampionIndex = uint32(i)
+			if linearTerm > maxLinear {
+				maxLinear = linearTerm
+				linearChampionIndex = uint32(i)
 			}
 
 			var toWrite [4]byte
@@ -268,8 +268,8 @@ func main() {
 		}
 	}
 
-	if maxPeriod > 0 {
-		fmt.Printf("\nMax preperiod: %d (machine %d)\nMax period: %d (machine %d)\n", maxPreperiod, preperiodChampionIndex, maxPeriod, periodChampionIndex)
+	if maxLinear > 0 {
+		fmt.Printf("Max constant term: %d (machine %d)\nMax linear term: %d (machine %d)\n", maxConstantTerm, constantChampionIndex, maxLinear, linearChampionIndex)
 	} else {
 		fmt.Println("No translated cyclers found")
 	}
