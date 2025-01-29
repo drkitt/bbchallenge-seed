@@ -188,7 +188,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 func main() {
 	var maxConstantTerm int = -1
 	var constantChampionIndex uint32 = 0
-	var maxLinear int = -1
+	var maxLinearTerm int = -1
 	var linearChampionIndex uint32 = 0
 
 	database, error := os.ReadFile(DATABASE_PATH)
@@ -216,7 +216,7 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 3
+	databaseSize = 4
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
@@ -257,8 +257,8 @@ func main() {
 				maxConstantTerm = constantTerm
 				constantChampionIndex = uint32(i)
 			}
-			if linearTerm > maxLinear {
-				maxLinear = linearTerm
+			if linearTerm > maxLinearTerm {
+				maxLinearTerm = linearTerm
 				linearChampionIndex = uint32(i)
 			}
 
@@ -268,8 +268,8 @@ func main() {
 		}
 	}
 
-	if maxLinear > 0 {
-		fmt.Printf("Max constant term: %d (machine %d)\nMax linear term: %d (machine %d)\n", maxConstantTerm, constantChampionIndex, maxLinear, linearChampionIndex)
+	if maxLinearTerm > 0 {
+		fmt.Printf("Max linear term: %d (machine %d)\nMax constant term: %d (machine %d)\n", maxLinearTerm, linearChampionIndex, maxConstantTerm, constantChampionIndex)
 	} else {
 		fmt.Println("No translated cyclers found")
 	}
