@@ -175,6 +175,9 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 		currentTime += 1
 	}
 
+	fmt.Println()
+	fmt.Println("Halted at time", currentTime)
+
 	// Record the steps since the end of the last cycle as a constant section
 	periods = append(periods, currentTime-previousCycleEndTime)
 
