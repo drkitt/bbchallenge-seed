@@ -78,8 +78,8 @@ func tapeString(tape []TapePosition, currentPosition int, currentState byte) str
 
 // Prints the status of the LBA at a specific time step
 func getStatus(currentTime int, currentState byte, symbolRead byte, tape []TapePosition, currentPosition int) string {
-	return fmt.Sprintf("\nCurrent time: %d\nCurrent state: %c\nSymbol read: %d\nTape:\n%s",
-		currentTime, stateToLetter(currentState), symbolRead, tapeString(tape, currentPosition, currentState))
+	return fmt.Sprintf("Current time: %d\n%s",
+		currentTime, tapeString(tape, currentPosition, currentState))
 }
 
 // Tells you whether the given LBA is a translated cycler, and if it is, what its preperiod and period are
@@ -132,7 +132,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 						fmt.Println("\t", tapeString(record.Tape, record.Position, currentState))
 
 						if recordsAreEquivalent(&previousRecord, &record) {
-							fmt.Println("\noh my god it's a translated cycler")
+							fmt.Println("oh my god it's a translated cycler")
 							preperiod := previousRecord.Time
 							period := currentTime - previousRecord.Time
 
@@ -156,11 +156,13 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			tape[currentPosition].Seen = true
 			tape[currentPosition].LastTimeSeen = currentTime
 
+			fmt.Println()
 		} else {
 			// Detect hitting the edge of the tape
 			if currentPosition == previousPosition {
 				fmt.Println("🥺 hi tape edge")
 				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
+				fmt.Println()
 				previousCycleEndTime = currentTime
 				searchingForPeriod = true
 			}
@@ -175,7 +177,6 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 		currentTime += 1
 	}
 
-	fmt.Println()
 	fmt.Println("Halted at time", currentTime)
 
 	// Record the steps since the end of the last cycle as a constant section
@@ -219,14 +220,14 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 5
+	databaseSize = 7
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
 		if error != nil {
 			fmt.Println("Error: ", error)
 		}
-		fmt.Print(lba.ToAsciiTable(2))
+		fmt.Println(lba.ToAsciiTable(2))
 
 		if isTranslatedCycler, periods := decide(lba, 30); isTranslatedCycler {
 			// Create string for the cost function
@@ -254,7 +255,6 @@ func main() {
 			fmt.Println()
 			fmt.Println("Periods:", periods)
 			fmt.Println("Cost function:", costFunction)
-			fmt.Println()
 
 			if constantTerm > maxConstantTerm {
 				maxConstantTerm = constantTerm
@@ -269,6 +269,10 @@ func main() {
 			binary.BigEndian.PutUint32(toWrite[0:4], uint32(i))
 			outputFile.Write(toWrite[:])
 		}
+
+		fmt.Println()
+		fmt.Println("----------------------------------------")
+		fmt.Println()
 	}
 
 	if maxLinearTerm > 0 {
