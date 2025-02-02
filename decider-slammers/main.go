@@ -29,7 +29,7 @@ type Record struct {
 	Position int
 }
 
-func recordsAreEquivalent(pastRecord *Record, currentRecord *Record) bool {
+func recordsAreEquivalent(movingRight bool, pastRecord *Record, currentRecord *Record) bool {
 	offset := 0
 
 	// See whether we've modified the tape squares surrounding the old record
@@ -47,7 +47,11 @@ func recordsAreEquivalent(pastRecord *Record, currentRecord *Record) bool {
 			return false
 		}
 
-		offset -= 1
+		if movingRight {
+			offset -= 1
+		} else {
+			offset += 1
+		}
 	}
 
 	// Otherwise, the records are considered equivalent if we weren't able to
@@ -90,6 +94,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	// machine so your decider can switch between well-defined states while your
 	// LBA can switch between well-defined states
 	searchingForPeriod := true
+	movingRight := true
 	previousPosition := -1
 	currentPosition := 0
 	nextPosition := currentPosition
@@ -97,6 +102,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	currentState := byte(1)
 	currentTime := 0
 	maxPositionSeen := -1
+	minPositionSeen := tapeLength
 	// When we encounter a new tape square, this maps the current state and
 	// symbol read to the contents of the tape at the time of reading
 	var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
@@ -109,7 +115,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
 
 			// Handle a never-before-seen tape square
-			if currentPosition > maxPositionSeen {
+			if (movingRight && currentPosition > maxPositionSeen) || (!movingRight && currentPosition < minPositionSeen) {
 				fmt.Println("New record")
 
 				var record Record
@@ -131,12 +137,12 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 						fmt.Println("\t", tapeString(previousRecord.Tape, previousRecord.Position, currentState))
 						fmt.Println("\t", tapeString(record.Tape, record.Position, currentState))
 
-						if recordsAreEquivalent(&previousRecord, &record) {
+						if recordsAreEquivalent(movingRight, &previousRecord, &record) {
 							fmt.Println("oh my god it's a translated cycler")
-							preperiod := previousRecord.Time
+							constantSection := previousRecord.Time - previousCycleEndTime
 							period := currentTime - previousRecord.Time
 
-							periods = append(periods, preperiod, period)
+							periods = append(periods, constantSection, period)
 
 							fmt.Println("Moving to edge of tape...")
 							searchingForPeriod = false
@@ -163,8 +169,15 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 				fmt.Println("🥺 hi tape edge")
 				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
 				fmt.Println()
+
+				// Remove old records
+				for k := range records {
+					delete(records, k)
+				}
+
 				previousCycleEndTime = currentTime
 				searchingForPeriod = true
+				movingRight = !movingRight
 			}
 		}
 
@@ -220,7 +233,7 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 7
+	databaseSize = 10
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
