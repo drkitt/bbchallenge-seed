@@ -139,9 +139,9 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 						fmt.Println("\t", tapeString(record.Tape, record.Position, currentState))
 
 						if recordsAreEquivalent(movingRight, &previousRecord, &record) {
-							fmt.Println("oh my god it's a translated cycler")
-							constantSection := previousRecord.Time - previousCycleEndTime
 							period := currentTime - previousRecord.Time
+							constantSection := previousRecord.Time - previousCycleEndTime
+							fmt.Printf("oh my god it's a translated cycler (preperiod: %d, period: %d)\n", constantSection, period)
 
 							// Go doesn't have an absolute value function for integers :/
 							distanceTraveledInPeriod := previousRecord.Position - record.Position
@@ -164,6 +164,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 			}
 
 			if maxPositionSeen > tapeLength || currentPosition < 0 {
+				fmt.Println("Not a translated cycler")
 				return false, -1, -1
 			}
 
@@ -198,7 +199,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 		currentTime += 1
 	}
 
-	fmt.Println("Halted at time", currentTime)
+	fmt.Printf("Halted at time %d (postperiod: %d)\n", currentTime, currentTime-previousCycleEndTime)
 
 	// Record the steps since the end of the last cycle as a constant section
 	constant += currentTime - previousCycleEndTime
