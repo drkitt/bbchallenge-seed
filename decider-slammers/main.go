@@ -86,10 +86,9 @@ func getStatus(currentTime int, currentState byte, symbolRead byte, tape []TapeP
 		currentTime, tapeString(tape, currentPosition, currentState))
 }
 
-// Tells you whether the given LBA is a translated cycler, and if it is, what its preperiod and period are
-func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
+// Tells you whether the given LBA is a translated cycler, and if it is, the coefficient and constant of its cost function. (Translated cyclers run in linear time)
+func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
-	var periods []int
 	// Yo dawg I you like state machines so I put a state machine in your state
 	// machine so your decider can switch between well-defined states while your
 	// LBA can switch between well-defined states
@@ -107,6 +106,8 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	// symbol read to the contents of the tape at the time of reading
 	var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
 	previousCycleEndTime := 0
+	// Used to construct the machine's cost function
+	coefficient, constant := 0, 0
 
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
@@ -142,7 +143,14 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 							constantSection := previousRecord.Time - previousCycleEndTime
 							period := currentTime - previousRecord.Time
 
-							periods = append(periods, constantSection, period)
+							// Go doesn't have an absolute value function for integers :/
+							distanceTraveledInPeriod := previousRecord.Position - record.Position
+							if distanceTraveledInPeriod < 0 {
+								distanceTraveledInPeriod = -distanceTraveledInPeriod
+							}
+
+							coefficient += period / distanceTraveledInPeriod
+							constant += constantSection
 
 							fmt.Println("Moving to edge of tape...")
 							searchingForPeriod = false
@@ -156,7 +164,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 			}
 
 			if maxPositionSeen > tapeLength || currentPosition < 0 {
-				return false, periods
+				return false, -1, -1
 			}
 
 			tape[currentPosition].Seen = true
@@ -193,19 +201,19 @@ func decide(lba bbc.LBA, tapeLength int) (bool, []int) {
 	fmt.Println("Halted at time", currentTime)
 
 	// Record the steps since the end of the last cycle as a constant section
-	periods = append(periods, currentTime-previousCycleEndTime)
+	constant += currentTime - previousCycleEndTime
 
 	// Did you know?
 	// Halting translated cyclers with repeating period 1 are called slammers.
 	// For more information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
-	return (len(periods) > 1), periods
+	return coefficient > 0 || constant > 0, coefficient, constant
 }
 
 func main() {
 	var maxConstantTerm int = -1
 	var constantChampionIndex uint32 = 0
-	var maxLinearTerm int = -1
+	var maxCoefficient int = -1
 	var linearChampionIndex uint32 = 0
 
 	database, error := os.ReadFile(DATABASE_PATH)
@@ -233,7 +241,7 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 10
+	databaseSize = 13
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
@@ -242,23 +250,13 @@ func main() {
 		}
 		fmt.Println(lba.ToAsciiTable(2))
 
-		if isTranslatedCycler, periods := decide(lba, 30); isTranslatedCycler {
+		if isTranslatedCycler, coefficient, constantTerm := decide(lba, 30); isTranslatedCycler {
 			// Create string for the cost function
 			costFunction := ""
-
-			constantTerm := 0
-			linearTerm := 0
-			for i := 0; i < len(periods); i++ {
-				if i%2 == 0 {
-					constantTerm += periods[i]
-				} else {
-					linearTerm += periods[i]
-				}
+			if coefficient > 1 {
+				costFunction += fmt.Sprintf("%d", coefficient)
 			}
-			if linearTerm > 1 {
-				costFunction += fmt.Sprintf("%d", linearTerm)
-			}
-			if linearTerm > 0 {
+			if coefficient > 0 {
 				costFunction += "t"
 			}
 			if constantTerm > 0 {
@@ -266,15 +264,14 @@ func main() {
 			}
 
 			fmt.Println()
-			fmt.Println("Periods:", periods)
 			fmt.Println("Cost function:", costFunction)
 
 			if constantTerm > maxConstantTerm {
 				maxConstantTerm = constantTerm
 				constantChampionIndex = uint32(i)
 			}
-			if linearTerm > maxLinearTerm {
-				maxLinearTerm = linearTerm
+			if coefficient > maxCoefficient {
+				maxCoefficient = coefficient
 				linearChampionIndex = uint32(i)
 			}
 
@@ -288,8 +285,8 @@ func main() {
 		fmt.Println()
 	}
 
-	if maxLinearTerm > 0 {
-		fmt.Printf("Max linear term: %d (machine %d)\nMax constant term: %d (machine %d)\n", maxLinearTerm, linearChampionIndex, maxConstantTerm, constantChampionIndex)
+	if maxCoefficient > 0 {
+		fmt.Printf("Max coefficient: %d (machine %d)\nMax constant term: %d (machine %d)\n", maxCoefficient, linearChampionIndex, maxConstantTerm, constantChampionIndex)
 	} else {
 		fmt.Println("No translated cyclers found")
 	}
