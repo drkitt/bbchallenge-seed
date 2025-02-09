@@ -18,7 +18,6 @@ const DATABASE_PATH = "./run_2025-01-14_12-25-37_halting"
 type TapePosition struct {
 	Symbol       byte
 	LastTimeSeen int
-	Seen         bool
 }
 
 // Keeps track of tape contents when the machine reaches a tape sqaure that it
@@ -89,6 +88,9 @@ func getStatus(currentTime int, currentState byte, symbolRead byte, tape []TapeP
 // Tells you whether the given LBA is a translated cycler, and if it is, the coefficient and constant of its cost function. (Translated cyclers run in linear time)
 func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
+	// The max/min position seen by the machine so far in each state
+	var maxPositionSeen map[byte]int = make(map[byte]int)
+	var minPositionSeen map[byte]int = make(map[byte]int)
 	// Yo dawg I you like state machines so I put a state machine in your state
 	// machine so your decider can switch between well-defined states while your
 	// LBA can switch between well-defined states
@@ -100,8 +102,6 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	toWrite := byte(0)
 	currentState := byte(1)
 	currentTime := 0
-	maxPositionSeen := -1
-	minPositionSeen := tapeLength
 	// When we encounter a new tape square, this maps the current state and
 	// symbol read to the contents of the tape at the time of reading
 	var records map[byte]map[byte][]Record = make(map[byte]map[byte][]Record)
@@ -116,16 +116,18 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 			// Detect hitting the edge of the tape
 			if currentPosition == previousPosition {
 				fmt.Println("🥺 hi tape edge")
-				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
-				fmt.Println()
 
 				// Remove old records
 				for k := range records {
 					delete(records, k)
 				}
+				for k := range maxPositionSeen {
+					delete(maxPositionSeen, k)
+				}
+				for k := range minPositionSeen {
+					delete(minPositionSeen, k)
+				}
 
-				maxPositionSeen = -1
-				minPositionSeen = tapeLength
 				previousCycleEndTime = currentTime
 				searchingForPeriod = true
 				movingRight = !movingRight
@@ -134,7 +136,13 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 
 		if searchingForPeriod {
 			// Handle a never-before-seen tape square
-			if (movingRight && currentPosition > maxPositionSeen) || (!movingRight && currentPosition < minPositionSeen) {
+			if _, ok := maxPositionSeen[currentState]; !ok {
+				maxPositionSeen[currentState] = -1
+			}
+			if _, ok := minPositionSeen[currentState]; !ok {
+				minPositionSeen[currentState] = tapeLength
+			}
+			if (movingRight && currentPosition > maxPositionSeen[currentState]) || (!movingRight && currentPosition < minPositionSeen[currentState]) {
 				fmt.Println("New record")
 				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
 
@@ -179,19 +187,18 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 
 				records[currentState][symbolRead] = append(records[currentState][symbolRead], record)
 
-				maxPositionSeen = bbc.MaxI(maxPositionSeen, currentPosition)
-				minPositionSeen = bbc.MinI(minPositionSeen, currentPosition)
+				maxPositionSeen[currentState] = bbc.MaxI(maxPositionSeen[currentState], currentPosition)
+				minPositionSeen[currentState] = bbc.MinI(minPositionSeen[currentState], currentPosition)
+
+				fmt.Println()
 			}
 
-			if maxPositionSeen > tapeLength || currentPosition < 0 {
+			if maxPositionSeen[currentState] > tapeLength || currentPosition < 0 {
 				fmt.Println("Not a translated cycler")
 				return false, -1, -1
 			}
 
-			tape[currentPosition].Seen = true
 			tape[currentPosition].LastTimeSeen = currentTime
-
-			fmt.Println()
 		}
 
 		// Take a step
@@ -253,6 +260,7 @@ func main() {
 		if error != nil {
 			fmt.Println("Error: ", error)
 		}
+		fmt.Println("Machine", i)
 		fmt.Println(lba.ToAsciiTable(2))
 
 		if isTranslatedCycler, coefficient, constantTerm := decide(lba, 30); isTranslatedCycler {
