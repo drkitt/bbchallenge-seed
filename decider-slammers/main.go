@@ -112,12 +112,31 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
 
-		if searchingForPeriod {
-			fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
+		if !searchingForPeriod {
+			// Detect hitting the edge of the tape
+			if currentPosition == previousPosition {
+				fmt.Println("🥺 hi tape edge")
+				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
+				fmt.Println()
 
+				// Remove old records
+				for k := range records {
+					delete(records, k)
+				}
+
+				maxPositionSeen = -1
+				minPositionSeen = tapeLength
+				previousCycleEndTime = currentTime
+				searchingForPeriod = true
+				movingRight = !movingRight
+			}
+		}
+
+		if searchingForPeriod {
 			// Handle a never-before-seen tape square
 			if (movingRight && currentPosition > maxPositionSeen) || (!movingRight && currentPosition < minPositionSeen) {
 				fmt.Println("New record")
+				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
 
 				var record Record
 				record.Tape = make([]TapePosition, tapeLength)
@@ -161,6 +180,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 				records[currentState][symbolRead] = append(records[currentState][symbolRead], record)
 
 				maxPositionSeen = bbc.MaxI(maxPositionSeen, currentPosition)
+				minPositionSeen = bbc.MinI(minPositionSeen, currentPosition)
 			}
 
 			if maxPositionSeen > tapeLength || currentPosition < 0 {
@@ -172,22 +192,6 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 			tape[currentPosition].LastTimeSeen = currentTime
 
 			fmt.Println()
-		} else {
-			// Detect hitting the edge of the tape
-			if currentPosition == previousPosition {
-				fmt.Println("🥺 hi tape edge")
-				fmt.Println(getStatus(currentTime, currentState, symbolRead, tape, currentPosition))
-				fmt.Println()
-
-				// Remove old records
-				for k := range records {
-					delete(records, k)
-				}
-
-				previousCycleEndTime = currentTime
-				searchingForPeriod = true
-				movingRight = !movingRight
-			}
 		}
 
 		// Take a step
