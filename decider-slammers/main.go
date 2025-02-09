@@ -219,6 +219,10 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	// Halting translated cyclers with repeating period 1 are called slammers.
 	// For more information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
+	if currentTime != coefficient*tapeLength+constant {
+		log.Println("❗️ Warning: the machine did not halt in the expected time (cost function gives runtime of", coefficient*tapeLength+constant, ", but the machine halted at time", currentTime, ")")
+	}
+
 	return coefficient > 0 || constant > 0, coefficient, constant
 }
 
