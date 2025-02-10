@@ -112,26 +112,28 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	for currentState > 0 {
 		symbolRead := tape[currentPosition].Symbol
 
-		if !searchingForPeriod {
-			// Detect hitting the edge of the tape
-			if currentPosition == previousPosition {
-				fmt.Println("🥺 hi tape edge")
+		// Detect hitting the edge of the tape
+		if currentPosition == previousPosition {
+			fmt.Println("🥺 hi tape edge")
 
-				// Remove old records
-				for k := range records {
-					delete(records, k)
-				}
-				for k := range maxPositionSeen {
-					delete(maxPositionSeen, k)
-				}
-				for k := range minPositionSeen {
-					delete(minPositionSeen, k)
-				}
+			// Remove old records
+			for k := range records {
+				delete(records, k)
+			}
+			for k := range maxPositionSeen {
+				delete(maxPositionSeen, k)
+			}
+			for k := range minPositionSeen {
+				delete(minPositionSeen, k)
+			}
 
+			// If we had already detected a cycle and were just waiting to reach
+			// the edge, prepare to detect the next cycle
+			if !searchingForPeriod {
 				previousCycleEndTime = currentTime
-				searchingForPeriod = true
 				movingRight = !movingRight
 			}
+			searchingForPeriod = true
 		}
 
 		if searchingForPeriod {
@@ -220,7 +222,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	// For more information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
 	if currentTime != coefficient*tapeLength+constant {
-		log.Println("❗️ Warning: the machine did not halt in the expected time (cost function gives runtime of", coefficient*tapeLength+constant, ", but the machine halted at time", currentTime, ")")
+		log.Printf("❗️ Warning: the machine did not halt in the expected time (cost function gives runtime of %d, but the machine halted at time %d)\n", coefficient*tapeLength+constant, currentTime)
 	}
 
 	return coefficient > 0 || constant > 0, coefficient, constant
