@@ -180,6 +180,26 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 
 							coefficient += period / distanceTraveledInPeriod
 							constant += constantSection
+							// Adjust the contant (again) to avoid overcounting.
+							// Specifically, take into account that the machine
+							// may not have traversed the entire tape while in
+							// its cycle; if it was already partway through the
+							// tape when the cycle began, we subtract from the
+							// constant the distance it traveled before the
+							// cycle began.
+							distanceTraveledInConstantSection := 0
+							if movingRight {
+								distanceTraveledInConstantSection = previousRecord.Position
+							} else {
+								distanceTraveledInConstantSection = (tapeLength - 1) - previousRecord.Position
+							}
+
+							fmt.Println(constant)
+							fmt.Println(distanceTraveledInConstantSection)
+
+							constant -= (period / distanceTraveledInPeriod) * distanceTraveledInConstantSection
+
+							fmt.Println(constant)
 
 							fmt.Println("Moving to edge of tape...")
 							searchingForPeriod = false
@@ -212,10 +232,10 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 		currentTime += 1
 	}
 
-	fmt.Printf("Halted at time %d (postperiod: %d)\n", currentTime, currentTime-previousCycleEndTime)
-
 	// Record the steps since the end of the last cycle as a constant section
 	constant += currentTime - previousCycleEndTime
+
+	fmt.Printf("Halted at time %d (coefficient: %d, constant: %d)\n", currentTime, coefficient, constant)
 
 	// Did you know?
 	// Halting translated cyclers with repeating period 1 are called slammers.
@@ -259,7 +279,7 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 13
+	databaseSize = 16
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
