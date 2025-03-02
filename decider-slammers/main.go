@@ -208,8 +208,17 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 							} else {
 								distanceTraveledInConstantSection = (tapeLength - 1) - previousRecord.Position
 							}
-
 							constant -= (period / distanceTraveledInPeriod) * distanceTraveledInConstantSection
+
+							// It gets worse: Since the tape head starts at the
+							// first tape square, we should actually multiply
+							// the coefficient by (tapeLength - 1) to account
+							// for the fact that the machine doesn't have to
+							// move to that square.
+							constant -= period / distanceTraveledInPeriod
+							// And then we add 1 to to account for when the tape
+							// head bonks against the edge of the tape.
+							constant += 1
 
 							fmt.Println("Moving to edge of tape...")
 							searchingForPeriod = false
@@ -299,7 +308,7 @@ func main() {
 		fmt.Println("Machine", i)
 		fmt.Println(lba.ToAsciiTable(2))
 
-		if isTranslatedCycler, coefficient, constantTerm := decide(lba, 30); isTranslatedCycler {
+		if isTranslatedCycler, coefficient, constantTerm := decide(lba, 13); isTranslatedCycler {
 			// Create string for the cost function
 			costFunction := ""
 			if coefficient > 1 {
