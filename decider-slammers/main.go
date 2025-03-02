@@ -31,12 +31,12 @@ type Record struct {
 func recordsAreEquivalent(movingRight bool, pastRecord *Record, currentRecord *Record) bool {
 	offset := 0
 
-	// See whether we've modified the tape squares surrounding the old record
+	// See whether we've modified the tape squares behind the old record
 	// position
 	for pastRecord.Position+offset >= 0 && pastRecord.Position+offset < len(pastRecord.Tape) {
 
 		// The records are automatically considered equivalent if there's a tape
-		// square before the previous record that hasn't been visited since the
+		// square behind the previous record that hasn't been visited since the
 		// previous record was broken
 		if currentRecord.Tape[pastRecord.Position+offset].LastTimeSeen < pastRecord.Time {
 			break
@@ -46,10 +46,25 @@ func recordsAreEquivalent(movingRight bool, pastRecord *Record, currentRecord *R
 			return false
 		}
 
+		// (the meaning of "behind" depends on which direction the tape head is moving in)
 		if movingRight {
 			offset -= 1
 		} else {
 			offset += 1
+		}
+	}
+
+	// Now see if the tape squares ahead of the records are equivalent
+	offset = 0
+	for currentRecord.Position+offset < len(currentRecord.Tape) && currentRecord.Position+offset >= 0 {
+		if currentRecord.Tape[currentRecord.Position+offset].Symbol != pastRecord.Tape[pastRecord.Position+offset].Symbol {
+			return false
+		}
+
+		if movingRight {
+			offset += 1
+		} else {
+			offset -= 1
 		}
 	}
 
@@ -194,12 +209,7 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 								distanceTraveledInConstantSection = (tapeLength - 1) - previousRecord.Position
 							}
 
-							fmt.Println(constant)
-							fmt.Println(distanceTraveledInConstantSection)
-
 							constant -= (period / distanceTraveledInPeriod) * distanceTraveledInConstantSection
-
-							fmt.Println(constant)
 
 							fmt.Println("Moving to edge of tape...")
 							searchingForPeriod = false
@@ -279,7 +289,7 @@ func main() {
 	// Not gonna add multithreading until it gets annoyingly slow 😤
 
 	// Oh man what happened here?
-	databaseSize = 16
+	databaseSize = 128
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
