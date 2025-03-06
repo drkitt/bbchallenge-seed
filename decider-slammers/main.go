@@ -100,8 +100,9 @@ func getStatus(currentTime int, currentState byte, symbolRead byte, tape []TapeP
 		currentTime, tapeString(tape, currentPosition, currentState))
 }
 
-// Tells you whether the given LBA is a translated cycler, and if it is, the coefficient and constant of its cost function. (Translated cyclers run in linear time)
-func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
+// Gets the coefficient and constant of an LBA's cost function, assuming it runs
+// in linear time
+func calculateLinearCostFunction(lba bbc.LBA, tapeLength int) (int, int) {
 	var tape []TapePosition = make([]TapePosition, tapeLength)
 	// The max/min position seen by the machine so far in each state
 	var maxPositionSeen map[byte]int = make(map[byte]int)
@@ -234,11 +235,6 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 				fmt.Println()
 			}
 
-			if maxPositionSeen[currentState] > tapeLength || currentPosition < 0 {
-				fmt.Println("Not a translated cycler")
-				return false, -1, -1
-			}
-
 			tape[currentPosition].LastTimeSeen = currentTime
 		}
 
@@ -261,10 +257,10 @@ func decide(lba bbc.LBA, tapeLength int) (bool, int, int) {
 	// For more information, see https://www.youtube.com/watch?v=XYq08kJGp4M
 
 	if currentTime != coefficient*tapeLength+constant {
-		log.Printf("❗️ Warning: the machine did not halt in the expected time (cost function gives runtime of %d, but the machine halted at time %d)\n", coefficient*tapeLength+constant, currentTime)
+		log.Printf("❗️ Warning: The machine did not halt in the expected time (cost function gives runtime of %d, but the machine halted at time %d)\n", coefficient*tapeLength+constant, currentTime)
 	}
 
-	return coefficient > 0 || constant > 0, coefficient, constant
+	return coefficient, constant
 }
 
 func main() {
@@ -305,35 +301,38 @@ func main() {
 		fmt.Println("Machine", i)
 		fmt.Println(lba.ToAsciiTable(2))
 
-		if isTranslatedCycler, coefficient, constantTerm := decide(lba, 13); isTranslatedCycler {
-			// Create string for the cost function
-			costFunction := ""
-			if coefficient > 1 {
-				costFunction += fmt.Sprintf("%d", coefficient)
-			}
-			if coefficient > 0 {
-				costFunction += "t"
-			}
-			if constantTerm > 0 {
-				costFunction += fmt.Sprintf(" + %d", constantTerm)
-			}
+		coefficient, constantTerm := calculateLinearCostFunction(lba, 13)
 
-			fmt.Println()
-			fmt.Println("Cost function:", costFunction)
-
-			if constantTerm > maxConstantTerm {
-				maxConstantTerm = constantTerm
-				constantChampionIndex = uint32(i)
-			}
-			if coefficient > maxCoefficient {
-				maxCoefficient = coefficient
-				linearChampionIndex = uint32(i)
-			}
-
-			var toWrite [4]byte
-			binary.BigEndian.PutUint32(toWrite[0:4], uint32(i))
-			outputFile.Write(toWrite[:])
+		// Create string for the cost function
+		costFunction := ""
+		if coefficient > 1 {
+			costFunction += fmt.Sprintf("%d", coefficient)
 		}
+		if coefficient > 0 {
+			costFunction += "t"
+			if constantTerm > 0 {
+				costFunction += " + "
+			}
+		}
+		if constantTerm > 0 {
+			costFunction += fmt.Sprintf("%d", constantTerm)
+		}
+
+		fmt.Println()
+		fmt.Println("Cost function:", costFunction)
+
+		if constantTerm > maxConstantTerm {
+			maxConstantTerm = constantTerm
+			constantChampionIndex = uint32(i)
+		}
+		if coefficient > maxCoefficient {
+			maxCoefficient = coefficient
+			linearChampionIndex = uint32(i)
+		}
+
+		var toWrite [4]byte
+		binary.BigEndian.PutUint32(toWrite[0:4], uint32(i))
+		outputFile.Write(toWrite[:])
 
 		fmt.Println()
 		fmt.Println("----------------------------------------")
