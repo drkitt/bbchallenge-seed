@@ -12,7 +12,7 @@ import (
 )
 
 // Where to find the file that contains the halting machines
-const DATABASE_PATH = "./run_2025-01-14_12-25-37_halting"
+const DATABASE_PATH = "./run_2025-03-06_13-46-57_halting"
 
 // Represents a single square on the tape along with some metadata
 type TapePosition struct {
@@ -296,9 +296,6 @@ func main() {
 	defer outputFile.Close()
 
 	// Not gonna add multithreading until it gets annoyingly slow 😤
-
-	// Oh man what happened here?
-	databaseSize = 128
 
 	for i := 0; i < databaseSize; i += 1 {
 		lba, error := bbc.GetMachineI(database, i, false)
